@@ -211,7 +211,21 @@
 
             document.getElementById("participantsFormSection").style.display = "block";
         }
-
+        
+         function initializeRankings() {
+            rankings = participants.map(participant => ({
+                name: participant,
+                points: 0,
+                matchesPlayed: 0,
+                wins: 0,
+                draws: 0,
+                losses: 0,
+                winPercentage: 0,
+                pointsScored: 0,
+                pointsConceded: 0,
+                difference: 0
+            }));
+        }
         function generateCompetition(event) {
             event.preventDefault(); // Empêche la soumission du formulaire
 
@@ -235,21 +249,6 @@
             }
 
             document.getElementById("competitionSection").style.display = "block";
-        }
-
-        function initializeRankings() {
-            rankings = participants.map(participant => ({
-                name: participant,
-                points: 0,
-                matchesPlayed: 0,
-                wins: 0,
-                draws: 0,
-                losses: 0,
-                winPercentage: 0,
-                pointsScored: 0,
-                pointsConceded: 0,
-                difference: 0
-            }));
         }
 
         function initializeTournament() {
