@@ -64,7 +64,7 @@
             transition: background-color 0.5s ease-in-out;
         }
         .pending {
-            background-color: #e2e3e5;
+            background-color: #e2e5ea;
             transition: background-color 0.5s ease-in-out;
         }
         .notification {
@@ -212,7 +212,9 @@
             document.getElementById("participantsFormSection").style.display = "block";
         }
 
-        function generateCompetition() {
+        function generateCompetition(event) {
+            event.preventDefault(); // Empêche la soumission du formulaire
+
             const competitionType = document.getElementById("competitionType").value;
             const participantInputs = document.querySelectorAll(".participant-name");
             participants = Array.from(participantInputs).map(input => input.value.trim()).filter(name => name);
@@ -233,6 +235,21 @@
             }
 
             document.getElementById("competitionSection").style.display = "block";
+        }
+
+        function initializeRankings() {
+            rankings = participants.map(participant => ({
+                name: participant,
+                points: 0,
+                matchesPlayed: 0,
+                wins: 0,
+                draws: 0,
+                losses: 0,
+                winPercentage: 0,
+                pointsScored: 0,
+                pointsConceded: 0,
+                difference: 0
+            }));
         }
 
         function initializeTournament() {
@@ -393,30 +410,6 @@
             if (event.target === modal) {
                 closeModal();
             }
-        }
-        function generateCompetition(event) {
-            event.preventDefault();  // Empêche la soumission du formulaire
-            console.log("Le bouton Générer la compétition a été cliqué.");  // Débogage
-            const competitionType = document.getElementById("competitionType").value;
-            const participantInputs = document.querySelectorAll(".participant-name");
-            participants = Array.from(participantInputs).map(input => input.value.trim()).filter(name => name);
-
-            if (participants.length < 2) {
-                showModal("Veuillez entrer au moins deux noms de participants.");
-                return;
-            }
-
-            initializeRankings();
-
-            if (competitionType === "championnat") {
-                generateChampionship();
-            } else {
-                currentRound = 1;
-                roundWinners = [];
-                initializeTournament();
-            }
-
-            document.getElementById("competitionSection").style.display = "block";
         }
     </script>
 </body>
