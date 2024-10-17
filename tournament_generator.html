@@ -226,6 +226,150 @@
                 difference: 0
             }));
         }
+        
+        function updateScore(input, matchIndex, player) {
+    const score = parseInt(input.value);
+    if (player === 1) {
+        matches[matchIndex].score1 = score;
+    } else {
+        matches[matchIndex].score2 = score;
+    }
+}
+function validateMatch(matchIndex) {
+    const match = matches[matchIndex];
+    if (match.score1 === null || match.score2 === null || isNaN(match.score1) || isNaN(match.score2)) {
+        alert("Veuillez entrer des scores valides.");
+        return;
+    }
+
+    // Mise à jour des résultats du match et des classements
+    updateMatchResults(match.player1, match.player2, match.score1, match.score2);
+    updateRankingTable();
+}
+
+function updateMatchResults(player1, player2, score1, score2) {
+    resetRanking();
+
+    matches.forEach(match => {
+        if (match.score1 !== null && match.score2 !== null) {
+            if (match.score1 > match.score2) {
+                updateRanking(match.player1, 3, 1, 0, 0, match.score1, match.score2);
+                updateRanking(match.player2, 1, 0, 0, 1, match.score2, match.score1);
+            } else if (match.score2 > match.score1) {
+                updateRanking(match.player2, 3, 1, 0, 0, match.score2, match.score1);
+                updateRanking(match.player1, 1, 0, 0, 1, match.score1, match.score2);
+            } else {
+                updateRanking(match.player1, 2, 0, 1, 0, match.score1, match.score2);
+                updateRanking(match.player2, 2, 0, 1, 0, match.score2, match.score1);
+            }
+        }
+    });
+}
+        
+function updateRanking(playerName, points, wins, draws, losses, scored, conceded) {
+    const player = rankings.find(p => p.name === playerName);
+    player.points += points;
+    player.matchesPlayed += 1;
+    player.wins += wins;
+    player.draws += draws;
+    player.losses += losses;
+    player.pointsScored += scored;
+    player.pointsConceded += conceded;
+    player.difference = player.pointsScored - player.pointsConceded;
+    player.winPercentage = ((player.wins / player.matchesPlayed) * 100).toFixed(2);
+}
+
+function resetRanking() {
+    rankings.forEach(player => {
+        player.points = 0;
+        player.matchesPlayed = 0;
+        player.wins = 0;
+        player.draws = 0;
+        player.losses = 0;
+        player.winPercentage = 0;
+        player.pointsScored = 0;
+        player.pointsConceded = 0;
+        player.difference = 0;
+    });
+}
+
+        function updateRankingTable() {
+    const tableBody = document.getElementById("rankingTable").querySelector("tbody");
+    tableBody.innerHTML = "";
+
+    // Classe les participants par points
+    rankings.sort((a, b) => b.points - a.points || b.difference - a.difference);
+
+    rankings.forEach(player => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${player.name}</td>
+            <td>${player.points}</td>
+            <td>${player.matchesPlayed}</td>
+            <td>${player.wins}</td>
+            <td>${player.draws}</td>
+            <td>${player.losses}</td>
+            <td>${player.winPercentage}%</td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+        function generateChampionship() {
+            const contentDiv = document.getElementById("competitionContent");
+            contentDiv.innerHTML = "<h3>Championnat - Matches</h3>";
+            const table = document.createElement("table");
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Match</th>
+                        <th>Participant 1</th>
+                        <th>Participant 2</th>
+                        <th>Score P1</th>
+                        <th>Score P2</th>
+                        <th>Résultat</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+            const tbody = table.querySelector("tbody");
+
+            matches = [];
+            let matchNumber = 1;
+        
+            // Génère des matches pour chaque paire de participants
+            for (let i = 0; i < participants.length; i++) {
+                for (let j = i + 1; j < participants.length; j++) {
+                    matches.push({
+                        match: matchNumber++,
+                        player1: participants[i],
+                        player2: participants[j],
+                        score1: null,
+                        score2: null
+               });
+        }
+    }
+
+    // Affiche chaque match dans un tableau
+    matches.forEach(match => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>Match ${match.match}</td>
+            <td>${match.player1}</td>
+            <td>${match.player2}</td>
+            <td><input type="number" min="0" placeholder="Score" onchange="updateScore(this, ${match.match - 1}, 1)"></td>
+            <td><input type="number" min="0" placeholder="Score" onchange="updateScore(this, ${match.match - 1}, 2)"></td>
+            <td><span>En attente</span></td>
+            <td><button onclick="validateMatch(${match.match - 1})">Valider</button></td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    contentDiv.appendChild(table);
+    updateRankingTable();  // Mise à jour du classement après les résultats
+}
+
         function generateCompetition(event) {
             event.preventDefault(); // Empêche la soumission du formulaire
 
