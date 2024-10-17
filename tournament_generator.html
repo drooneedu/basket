@@ -143,7 +143,7 @@
             <h2>Participants</h2>
             <form id="participantsForm">
                 <div id="participantsInputs"></div>
-                <button type="button" onclick="generateCompetition()">Générer la compétition</button>
+                <button type="button" onclick="generateCompetition(event)">Générer la compétition</button>
             </form>
         </div>
 
@@ -394,7 +394,9 @@
                 closeModal();
             }
         }
-        function generateCompetition() {
+        function generateCompetition(event) {
+            event.preventDefault();  // Empêche la soumission du formulaire
+            console.log("Le bouton Générer la compétition a été cliqué.");
             console.log("Le bouton Générer la compétition a été cliqué.");  // Débogage
             const competitionType = document.getElementById("competitionType").value;
             const participantInputs = document.querySelectorAll(".participant-name");
