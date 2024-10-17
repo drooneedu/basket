@@ -394,6 +394,29 @@
                 closeModal();
             }
         }
+        function generateCompetition() {
+            console.log("Le bouton Générer la compétition a été cliqué.");  // Débogage
+            const competitionType = document.getElementById("competitionType").value;
+            const participantInputs = document.querySelectorAll(".participant-name");
+            participants = Array.from(participantInputs).map(input => input.value.trim()).filter(name => name);
+
+            if (participants.length < 2) {
+                showModal("Veuillez entrer au moins deux noms de participants.");
+                return;
+            }
+
+            initializeRankings();
+
+            if (competitionType === "championnat") {
+                generateChampionship();
+            } else {
+                currentRound = 1;
+                roundWinners = [];
+                initializeTournament();
+            }
+
+            document.getElementById("competitionSection").style.display = "block";
+        }
     </script>
 </body>
 </html>
