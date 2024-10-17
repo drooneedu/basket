@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compétitions 1 vs 1</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        th, td {
+            border-bottom: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            display: block;
+        }
+        input, select, button {
+            padding: 8px;
+            margin-top: 5px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .win {
+            background-color: #d4edda;
+            transition: background-color 0.5s ease-in-out;
+        }
+        .loss {
+            background-color: #f8d7da;
+            transition: background-color 0.5s ease-in-out;
+        }
+        .draw {
+            background-color: #fff3cd;
+            transition: background-color 0.5s ease-in-out;
+        }
+        .pending {
+            background-color: #e2e3e5;
+            transition: background-color 0.5s ease-in-out;
+        }
+        .notification {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            display: none;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .notification.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .notification.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover, .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Compétitions 1 vs 1</h1>
+        <form id="competitionForm">
+            <div class="form-group">
+                <label for="numParticipants">Nombre de participants :</label>
+                <input type="number" id="numParticipants" min="2" required>
+            </div>
+            <div class="form-group">
+                <label for="competitionType">Type de compétition :</label>
+                <select id="competitionType" required>
+                    <option value="championnat">Championnat</option>
+                    <option value="tournoi">Tournoi</option>
+                </select>
+            </div>
+            <button type="button" onclick="showParticipantsForm()">Continuer</button>
+        </form>
+
+        <div id="participantsFormSection" style="display: none;">
+            <h2>Participants</h2>
+            <form id="participantsForm">
+                <div id="participantsInputs"></div>
+                <button type="button" onclick="generateCompetition()">Générer la compétition</button>
+            </form>
+        </div>
+
+        <div id="competitionSection" style="display: none;">
+            <h2 id="competitionTitle"></h2>
+            <div id="competitionContent"></div>
+            <h3>Classement</h3>
+            <button onclick="sortRankings('points')">Classer par Points</button>
+            <button onclick="sortRankings('winPercentage')">Classer par % Victoires</button>
+            <table id="rankingTable">
+                <thead>
+                    <tr>
+                        <th>Participant</th>
+                        <th>Points</th>
+                        <th>Matches Joués</th>
+                        <th>Victoires</th>
+                        <th>Nuls</th>
+                        <th>Défaites</th>
+                        <th>% Victoires</th>
+                        <th>Points Marqués</th>
+                        <th>Points Encaissés</th>
+                        <th>Différence</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <button onclick="generatePDF()">Générer un rapport PDF</button>
+        </div>
+    </div>
+
+    <!-- Modal Structure -->
+    <div id="customModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <p>Modal message goes here</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script>
+        let participants = [];
+        let matches = [];
+        let rankings = [];
+        let currentRound = 1;
+        let roundWinners = [];
+
+        function showParticipantsForm() {
+            const numParticipants = parseInt(document.getElementById("numParticipants").value);
+            if (isNaN(numParticipants) || numParticipants < 2) {
+                showModal("Veuillez entrer un nombre valide de participants (au moins 2).");
+                return;
+            }
+            const participantsInputsDiv = document.getElementById("participantsInputs");
+            participantsInputsDiv.innerHTML = ""; // Clear previous inputs
+
+            for (let i = 0; i < numParticipants; i++) {
+                const input = document.createElement("input");
+                input.type = "text";
+                input.placeholder = `Nom du participant ${i + 1}`;
+                input.required = true;
+                input.className = "participant-name";
+                participantsInputsDiv.appendChild(input);
+                participantsInputsDiv.appendChild(document.createElement("br"));
+            }
+
+            document.getElementById("participantsFormSection").style.display = "block";
+        }
+
+        function generateCompetition() {
+            const competitionType = document.getElementById("competitionType").value;
+            const participantInputs = document.querySelectorAll(".participant-name");
+            participants = Array.from(participantInputs).map(input => input.value.trim()).filter(name => name);
+
+            if (participants.length < 2) {
+                showModal("Veuillez entrer au moins deux noms de participants.");
+                return;
+            }
+
+            initializeRankings();
+
+            if (competitionType === "championnat") {
+                generateChampionship();
+            } else {
+                currentRound = 1;
+                roundWinners = [];
+                initializeTournament();
+            }
+
+            document.getElementById("competitionSection").style.display = "block";
+        }
+
+        function initializeTournament() {
+            let numParticipants = participants.length;
+            while (!isPowerOfTwo(numParticipants)) {
+                participants.push("Bye");
+                numParticipants++;
+            }
+            participants = participants.sort(() => Math.random() - 0.5);
+            generateTournamentBracket();
+        }
+
+        function isPowerOfTwo(n) {
+            return (Math.log2(n) % 1 === 0);
+        }
+
+        function generateTournamentBracket() {
+            const contentDiv = document.getElementById("competitionContent");
+            contentDiv.innerHTML = `<h3>Tournoi - Round ${currentRound}</h3>`;
+            const table = document.createElement("table");
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Match</th>
+                        <th>Participant 1</th>
+                        <th>Participant 2</th>
+                        <th>Score P1</th>
+                        <th>Score P2</th>
+                        <th>Résultat</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+            const tbody = table.querySelector("tbody");
+
+            matches = [];
+            let matchNumber = 1;
+
+            for (let i = 0; i < participants.length; i += 2) {
+                const player1 = participants[i];
+                const player2 = participants[i + 1] || "Bye";
+                matches.push({
+                    match: matchNumber++,
+                    player1: player1,
+                    player2: player2,
+                    score1: null,
+                    score2: null
+                });
+            }
+
+            matches.forEach(match => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>Match ${match.match}</td>
+                    <td>${match.player1}</td>
+                    <td>${match.player2}</td>
+                    <td><input type="number" min="0" placeholder="Score" onchange="updateScore(this, ${match.match - 1}, 1)"></td>
+                    <td><input type="number" min="0" placeholder="Score" onchange="updateScore(this, ${match.match - 1}, 2)"></td>
+                    <td><span>En attente</span></td>
+                    <td><button onclick="validateTournamentMatch(${match.match - 1})">Valider</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            contentDiv.appendChild(table);
+        }
+
+        function validateTournamentMatch(matchIndex) {
+            const match = matches[matchIndex];
+            const row = document.querySelectorAll("tbody tr")[matchIndex];
+            const resultCell = row.querySelector("span");
+
+            if (match.score1 === null || match.score2 === null || isNaN(match.score1) || isNaN(match.score2)) {
+                showModal("Veuillez entrer les scores valides avant de valider.");
+                return;
+            }
+
+            let resultText;
+            let rowClass;
+
+            const winner = match.score1 > match.score2 ? match.player1 : match.player2;
+            if (winner === "Bye") {
+                resultText = "Automatique - Bye";
+                rowClass = "pending";
+            } else {
+                if (match.score1 > match.score2) {
+                    resultText = `${match.player1} gagne`;
+                    rowClass = "win";
+                } else if (match.score2 > match.score1) {
+                    resultText = `${match.player2} gagne`;
+                    rowClass = "loss";
+                } else {
+                    resultText = "Match nul";
+                    rowClass = "draw";
+                }
+            }
+
+            resultCell.textContent = resultText;
+            row.className = rowClass;
+
+            showNotification("Match validé avec succès.", "success");
+
+            advanceToNextRound(winner);
+        }
+
+        function advanceToNextRound(winner) {
+            roundWinners.push(winner);
+            if (roundWinners.length === matches.length) {
+                if (roundWinners.length === 1) {
+                    declareChampion(roundWinners[0]);
+                } else {
+                    participants = [...roundWinners];
+                    roundWinners = [];
+                    currentRound++;
+                    generateTournamentBracket();
+                }
+            }
+        }
+
+        function declareChampion(champion) {
+            const contentDiv = document.getElementById("competitionContent");
+            contentDiv.innerHTML = `<h3>Félicitations à ${champion} - Champion du Tournoi!</h3>`;
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement("div");
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.querySelector(".container").prepend(notification);
+
+            setTimeout(() => {
+                notification.classList.add("show");
+            }, 100);
+
+            setTimeout(() => {
+                notification.classList.remove("show");
+                setTimeout(() => {
+                    notification.remove();
+                }, 500);
+            }, 3000);
+        }
+
+        function showModal(message) {
+            const modal = document.getElementById("customModal");
+            const modalContent = modal.querySelector(".modal-content p");
+            modalContent.textContent = message;
+            modal.style.display = "block";
+        }
+
+        function closeModal() {
+            const modal = document.getElementById("customModal");
+            modal.style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById("customModal");
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>
