@@ -211,7 +211,40 @@
 
             document.getElementById("participantsFormSection").style.display = "block";
         }
-        
+        function generatePDF() {
+    // Initialisation de jsPDF
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const title = "Rapport de Compétition";
+    const date = new Date().toLocaleDateString();
+
+    // Titre du document PDF
+    doc.text(title, 10, 10);
+    doc.text(`Date : ${date}`, 10, 20);
+    doc.text("Tableau des matches :", 10, 30);
+
+    // Ajout des informations sur les matches
+    let y = 40;
+    matches.forEach((match, index) => {
+        const matchText = `Match ${index + 1} : ${match.player1} vs ${match.player2} - ${match.score1 ?? "N/A"}:${match.score2 ?? "N/A"}`;
+        doc.text(matchText, 10, y);
+        y += 10;
+    });
+
+    // Ajout du classement
+    doc.text("Classement :", 10, y);
+    y += 10;
+
+    rankings.forEach((player, index) => {
+        const rankText = `${index + 1}. ${player.name} - Points: ${player.points}, Joués: ${player.matchesPlayed}, Victoires: ${player.wins}, Nuls: ${player.draws}, Défaites: ${player.losses}, % Victoires: ${player.winPercentage}%, Marqués: ${player.pointsScored}, Encaissés: ${player.pointsConceded}, Différence: ${player.difference}`;
+        doc.text(rankText, 10, y);
+        y += 10;
+    });
+
+    // Sauvegarde du PDF avec un nom de fichier unique basé sur la date
+    doc.save(`rapport_competition_${date.replace(/\//g, '-')}.pdf`);
+}
+
          function initializeRankings() {
             rankings = participants.map(participant => ({
                 name: participant,
